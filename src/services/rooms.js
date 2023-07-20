@@ -3,21 +3,32 @@ import { orderModel } from "../models/orderModel.js";
 
 export const getRooms = async () => {
   try {
-    const roomsData = await roomModel.find();
+    const totalRooms = await roomModel.find();
 //     const roomsData = await roomModel.aggregate([ 
 //     { $group:{ _id:'$type', total: { $sum:1 } }
 // }])
 
 
 ///////
-const ACData = await roomModel.aggregate([
-    { $match:{ type:'AC'}},
-    { $group:{ _id:{ status:'$status'}, availAC: {$sum:1}}
+const availAC = await roomModel.aggregate([
+    { $match:{ type:'AC'}},{$match:{status: false}},
+    { $group:{ _id:null, values: {$push:'$$ROOT'}}
 }])
 
-const NACData = await roomModel.aggregate([
-    { $match:{ type:'NAC'}},
-    { $group:{ _id:{ status:'$status'}, availNAC: {$sum:1}}
+const nonAvailAC = await roomModel.aggregate([
+    { $match:{ type:'AC'}},{$match:{status: true}},
+    { $group:{ _id:null, values: {$push:'$$ROOT'}}
+}])
+
+
+const availNAC = await roomModel.aggregate([
+    { $match:{ type:'NAC'}},{$match:{status: false}},
+    { $group:{ _id:null, values: {$push:'$$ROOT'}}
+}])
+
+const nonAvailNAC = await roomModel.aggregate([
+    { $match:{ type:'NAC'}},{$match:{status: true}},
+    { $group:{ _id:null, values: {$push:'$$ROOT'}}
 }])
 ///////
 
@@ -92,7 +103,7 @@ const NACData = await roomModel.aggregate([
 // ]);
 
 
-    if (!ACData || !NACData || !roomsData) {
+    if (!totalRooms || !availAC || !nonAvailAC || !availNAC || !nonAvailNAC) {
       return {
         status: 404,
         message: "Room data not found",
@@ -100,7 +111,7 @@ const NACData = await roomModel.aggregate([
     } else {
       return {
         status: 200,
-        data: {ACData: ACData, NACData: NACData, roomsData: roomsData},
+        data: {totalRooms, availAC, nonAvailAC, availNAC, nonAvailNAC},
       };
     }
   } catch (error) {
